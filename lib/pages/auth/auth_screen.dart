@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../widgets/clinic_loader.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 
@@ -13,6 +14,13 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen>
     with SingleTickerProviderStateMixin {
   bool open = false;
+  double downwardDrag = 0;
+
+  void trackCloseDrag(double delta) {
+    downwardDrag = (downwardDrag + delta).clamp(0, 64).toDouble();
+    if (open && !busy && downwardDrag >= 64) closeSheet();
+  }
+
   late final motion = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 3),
@@ -94,7 +102,7 @@ class _AuthScreenState extends State<AuthScreen>
 
   Future<void> sendPasswordReset() async {
     if (email.text.trim().isEmpty) {
-      showNotice('Enter your UMindanao email first.');
+      showNotice('Enter your email first.');
       return;
     }
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
@@ -324,6 +332,7 @@ class _AuthScreenState extends State<AuthScreen>
                   Positioned.fill(
                     child: GestureDetector(
                       behavior: HitTestBehavior.translucent,
+                      onTap: () => setState(() => open = true),
                       onVerticalDragUpdate: (details) {
                         if (details.delta.dy < 0) setState(() => open = true);
                       },
@@ -337,7 +346,7 @@ class _AuthScreenState extends State<AuthScreen>
                               children: [
                                 handle,
                                 const SizedBox(height: 16),
-                                const Text('Swipe up to sign in'),
+                                const Text('Swipe up or tap to sign in'),
                               ],
                             ),
                           ),
@@ -363,54 +372,93 @@ class _AuthScreenState extends State<AuthScreen>
                             top: keyboard || heroHeight < 40,
                             child: Column(
                               children: [
-                                SizedBox(
-                                  height: 52,
-                                  child: Stack(
-                                    children: [
-                                      Align(
-                                        alignment: const Alignment(0, -.45),
-                                        child: handle,
-                                      ),
-                                      Positioned(
-                                        right: 12,
-                                        top: 2,
-                                        child: IconButton(
-                                          style: ButtonStyle(
-                                            overlayColor:
-                                                WidgetStateProperty.resolveWith(
-                                                  (states) =>
-                                                      states.contains(
-                                                            WidgetState.hovered,
-                                                          ) &&
-                                                          !states.contains(
-                                                            WidgetState.focused,
-                                                          ) &&
-                                                          !states.contains(
-                                                            WidgetState.pressed,
-                                                          )
-                                                      ? Colors.transparent
-                                                      : null,
-                                                ),
-                                          ),
-                                          onPressed: busy ? null : closeSheet,
-                                          icon: Image.asset(
-                                            'assets/login-close.png',
-                                            semanticLabel: 'Close sign in',
-                                            width: 24,
-                                            height: 24,
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onVerticalDragStart: (_) => downwardDrag = 0,
+                                  onVerticalDragUpdate: (d) =>
+                                      trackCloseDrag(d.delta.dy),
+                                  child: SizedBox(
+                                    height: 52,
+                                    child: Stack(
+                                      children: [
+                                        Align(
+                                          alignment: const Alignment(0, -.45),
+                                          child: handle,
+                                        ),
+                                        Positioned(
+                                          right: 12,
+                                          top: 2,
+                                          child: IconButton(
+                                            style: ButtonStyle(
+                                              overlayColor:
+                                                  WidgetStateProperty.resolveWith(
+                                                    (states) =>
+                                                        states.contains(
+                                                              WidgetState
+                                                                  .hovered,
+                                                            ) &&
+                                                            !states.contains(
+                                                              WidgetState
+                                                                  .focused,
+                                                            ) &&
+                                                            !states.contains(
+                                                              WidgetState
+                                                                  .pressed,
+                                                            )
+                                                        ? Colors.transparent
+                                                        : null,
+                                                  ),
+                                            ),
+                                            onPressed: busy ? null : closeSheet,
+                                            icon: Image.asset(
+                                              'assets/login-close.png',
+                                              semanticLabel: 'Close sign in',
+                                              width: 24,
+                                              height: 24,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                Expanded(child: _formContent()),
+                                Expanded(
+                                  child:
+                                      NotificationListener<ScrollNotification>(
+                                        onNotification: (event) {
+                                          if (event
+                                                  is ScrollStartNotification ||
+                                              event is ScrollUpdateNotification) {
+                                            downwardDrag = 0;
+                                          }
+                                          if (event is OverscrollNotification &&
+                                              event.dragDetails != null &&
+                                              event.overscroll < 0) {
+                                            trackCloseDrag(-event.overscroll);
+                                          }
+                                          return false;
+                                        },
+                                        child: _formContent(),
+                                      ),
+                                ),
                               ],
                             ),
                           )
                         : const SizedBox.shrink(),
                   ),
                 ),
+                if (busy)
+                  const Positioned.fill(
+                    child: Stack(
+                      children: [
+                        ModalBarrier(
+                          dismissible: false,
+                          color: Color(0x5530313A),
+                        ),
+                        Center(child: ClinicLoader()),
+                      ],
+                    ),
+                  ),
               ],
             );
           },
@@ -424,6 +472,9 @@ class _AuthScreenState extends State<AuthScreen>
       key: form,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -454,21 +505,13 @@ class _AuthScreenState extends State<AuthScreen>
                   foregroundColor: Colors.white,
                   shape: const StadiumBorder(),
                 ),
-                child: busy
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        register ? 'Register' : 'Login',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                child: Text(
+                  register ? 'Register' : 'Login',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),

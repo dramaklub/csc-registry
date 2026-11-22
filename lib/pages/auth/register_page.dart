@@ -44,9 +44,9 @@ class RegisterPage extends StatelessWidget {
       ),
       SizedBox(height: 16),
       field(
-        label: 'UMindanao email',
+        label: 'Email',
         controller: email,
-        hint: 'name@umindanao.edu.ph',
+        hint: 'name@example.com',
       ),
       SizedBox(height: 16),
       field(label: 'Password', controller: password, secret: true),

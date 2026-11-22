@@ -3,6 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:theregistry/auth_screen.dart';
 
 void main() {
+  testWidgets('tap the landing area and pull the form down to close it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+    await tester.tapAt(const Offset(400, 120));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.byType(TextFormField), findsNWidgets(2));
+    await tester.dragFrom(
+      tester.getTopLeft(find.byType(SingleChildScrollView)) +
+          const Offset(8, 12),
+      const Offset(0, 150),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.byType(TextFormField), findsNothing);
+  });
   testWidgets('Phone login stays usable with the keyboard open', (
     tester,
   ) async {
@@ -11,7 +28,10 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
     expect(find.byType(TextFormField), findsNothing);
-    await tester.drag(find.text('Swipe up to sign in'), const Offset(0, -160));
+    await tester.drag(
+      find.text('Swipe up or tap to sign in'),
+      const Offset(0, -160),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     final loginPosition = tester.getTopLeft(find.byType(FilledButton));
@@ -20,7 +40,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(SnackBar),
-        matching: find.text('Enter your UMindanao email first.'),
+        matching: find.text('Enter your email first.'),
       ),
       findsOneWidget,
     );
@@ -47,13 +67,13 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Login'));
     await tester.pump();
-    expect(find.text('Enter your umindanao email'), findsOneWidget);
+    expect(find.text('Enter your email'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('Registration and return to login are reachable', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
-    await tester.tap(find.text('Swipe up to sign in'));
+    await tester.tap(find.text('Swipe up or tap to sign in'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     await tester.ensureVisible(find.textContaining('Register here'));

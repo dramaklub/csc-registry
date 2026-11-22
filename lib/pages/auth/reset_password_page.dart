@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// TODO: Match this page to the Expressive auth screens during the frontend pass.
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({
     super.key,

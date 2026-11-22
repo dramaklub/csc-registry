@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../clinic_client.dart';
+import '../widgets/clinic_loader.dart';
 import 'role_setup.dart';
 
 class AccountHome extends StatefulWidget {
@@ -68,7 +69,7 @@ class _AccountHomeState extends State<AccountHome> {
                   ],
                 )
               : user == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: ClinicLoader())
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
