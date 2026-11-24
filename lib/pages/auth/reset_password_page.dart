@@ -1,4 +1,8 @@
+import '../../widgets/clinic_feedback.dart';
 import 'package:flutter/material.dart';
+
+import 'field_colors.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // TODO: Match this page to the Expressive auth screens during the frontend pass.
@@ -33,15 +37,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       if (mounted) widget.onSaved();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              error is AuthException
+        showClinicToast(context, error is AuthException
                   ? error.message
-                  : 'Could not update your password. Try again.',
-            ),
-          ),
-        );
+                  : 'Could not update your password. Try again.');
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -62,9 +60,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 controller: password,
                 obscureText: true,
                 enabled: !busy,
+                autovalidateMode: AutovalidateMode.onUserInteractionIfError,
                 autofillHints: const [AutofillHints.newPassword],
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(labelText: 'New password'),
+                decoration: recoveryFieldDecoration('New password'),
                 validator: (v) => (v ?? '').trim().isEmpty || v!.length < 8
                     ? 'Use at least 8 characters'
                     : null,
@@ -73,9 +72,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               TextFormField(
                 obscureText: true,
                 enabled: !busy,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm new password',
-                ),
+                autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+                decoration: recoveryFieldDecoration('Confirm new password'),
                 onFieldSubmitted: (_) => submit(),
                 validator: (v) =>
                     v != password.text ? 'Passwords do not match' : null,

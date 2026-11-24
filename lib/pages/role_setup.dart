@@ -4,7 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../clinic_client.dart';
 
 class RoleSetup extends StatefulWidget {
-  const RoleSetup({super.key, required this.onComplete});
+  const RoleSetup({
+    super.key,
+    required this.onSignOut,
+    required this.onComplete,
+  });
+  final Future<void> Function() onSignOut;
   final VoidCallback onComplete;
   @override
   State<RoleSetup> createState() => _RoleSetupState();
@@ -76,19 +81,7 @@ class _RoleSetupState extends State<RoleSetup> {
               child: Text(busy ? 'Saving…' : 'Continue'),
             ),
             TextButton(
-              onPressed: busy
-                  ? null
-                  : () async {
-                      try {
-                        await db.auth.signOut();
-                      } catch (_) {
-                        if (mounted) {
-                          setState(
-                            () => error = 'Unable to sign out. Try again.',
-                          );
-                        }
-                      }
-                    },
+              onPressed: busy ? null : widget.onSignOut,
               child: const Text('Sign out'),
             ),
           ],

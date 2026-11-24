@@ -37,6 +37,9 @@ dependencies:
   supabase_flutter: 2.10.0
     # Temporary workaround for native build hooks with spaced Windows paths.
   path_provider_foundation: 2.5.1
+  flutter_svg: ^2.5.0
+  http: ^1.6.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +64,8 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/google-g.png
+    - assets/mentee_home/
     - assets/login-purple-field.png
     - assets/skills-clinic-mark.png
     - assets/login-close.png

@@ -30,11 +30,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      field(
-        label: 'Email',
-        controller: email,
-        hint: 'name@example.com',
-      ),
+      field(label: 'Email', controller: email, hint: 'Enter your email'),
       SizedBox(height: 16),
       field(
         label: 'Password',

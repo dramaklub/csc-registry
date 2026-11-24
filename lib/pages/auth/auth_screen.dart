@@ -1,7 +1,11 @@
+import '../../widgets/clinic_feedback.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../widgets/clinic_loader.dart';
+import 'google_auth.dart';
+import 'field_colors.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 
@@ -52,11 +56,7 @@ class _AuthScreenState extends State<AuthScreen>
   bool register = false, busy = false;
   bool showPassword = false;
   void showNotice(String message) {
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
+    showClinicToast(context, message);
   }
 
   @override
@@ -66,6 +66,22 @@ class _AuthScreenState extends State<AuthScreen>
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> continueWithGoogle() async {
+    if (busy) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => busy = true);
+    try {
+      final message = await startGoogleAuth();
+      if (mounted && message != null) showNotice(message);
+    } catch (_) {
+      if (mounted) {
+        showNotice('Could not open Google sign-in. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   Future<void> submit() async {
@@ -146,6 +162,7 @@ class _AuthScreenState extends State<AuthScreen>
       Semantics(
         label: label,
         child: TextFormField(
+          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
           controller: controller,
           style: const TextStyle(color: charcoal, fontSize: 16),
           obscureText: secret && (register || !showPassword),
@@ -174,7 +191,10 @@ class _AuthScreenState extends State<AuthScreen>
             hintText: hint,
             filled: true,
             hintStyle: const TextStyle(color: Color(0xFF5D5A62)),
-            fillColor: const Color(0xFFF0EDF3),
+            fillColor: authFieldFill,
+            errorStyle: authErrorStyle,
+            errorBorder: authErrorBorder,
+            focusedErrorBorder: authErrorBorder,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
@@ -242,7 +262,9 @@ class _AuthScreenState extends State<AuthScreen>
             final sheetHeight = keyboard
                 ? height
                 : (height * .5).clamp(
-                    (register ? 540.0 : 375.0).clamp(0.0, height),
+                    ((register ? 668.0 : 508.0) +
+                            MediaQuery.paddingOf(context).bottom)
+                        .clamp(0.0, height),
                     height,
                   );
             final heroHeight = open ? height - sheetHeight : height * .5;
@@ -428,7 +450,8 @@ class _AuthScreenState extends State<AuthScreen>
                                         onNotification: (event) {
                                           if (event
                                                   is ScrollStartNotification ||
-                                              event is ScrollUpdateNotification) {
+                                              event
+                                                  is ScrollUpdateNotification) {
                                             downwardDrag = 0;
                                           }
                                           if (event is OverscrollNotification &&
@@ -506,7 +529,7 @@ class _AuthScreenState extends State<AuthScreen>
                   shape: const StadiumBorder(),
                 ),
                 child: Text(
-                  register ? 'Register' : 'Login',
+                  register ? 'Sign up' : 'Log In',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -515,7 +538,7 @@ class _AuthScreenState extends State<AuthScreen>
               ),
             ),
             const SizedBox(height: 8),
-            TextButton(
+            OutlinedButton(
               onPressed: busy
                   ? null
                   : () => setState(() {
@@ -524,18 +547,43 @@ class _AuthScreenState extends State<AuthScreen>
                       ScaffoldMessenger.of(context).removeCurrentSnackBar();
                       form.currentState?.reset();
                     }),
-              style: TextButton.styleFrom(foregroundColor: charcoal),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                foregroundColor: const Color(0xFF493077),
+                side: const BorderSide(color: Color(0xFF68508F)),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               child: Text(
-                register
-                    ? 'Already registered? Back to sign in'
-                    : 'Don’t have an account? Register here',
+                register ? 'Back to sign in' : 'Sign up',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+            if (supportsGoogleAuth) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: busy ? null : continueWithGoogle,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF1F1F1F),
+                  side: const BorderSide(color: Color(0xFF747775)),
+                ),
+                icon: Image.asset(
+                  'assets/google-g.png',
+                  width: 20,
+                  height: 20,
+                  excludeFromSemantics: true,
+                ),
+                label: const Text('Continue with Google'),
+              ),
+            ],
           ],
         ),
       ),

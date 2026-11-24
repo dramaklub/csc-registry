@@ -1,7 +1,12 @@
+import 'request_topic_page.dart';
+import '../widgets/clinic_feedback.dart';
+
 import 'package:flutter/material.dart';
 
 import '../clinic_client.dart';
+import '../appointment_repository.dart';
 import '../widgets/clinic_loader.dart';
+import 'mentee_home.dart';
 import 'role_setup.dart';
 
 class AccountHome extends StatefulWidget {
@@ -12,7 +17,7 @@ class AccountHome extends StatefulWidget {
 
 class _AccountHomeState extends State<AccountHome> {
   late Future<Map<String, dynamic>> profile;
-  String? error;
+  bool signingOut = false;
   @override
   void initState() {
     super.initState();
@@ -28,10 +33,15 @@ class _AccountHomeState extends State<AccountHome> {
   }
 
   Future<void> signOut() async {
+    if (signingOut) return;
+    setState(() => signingOut = true);
     try {
       await db.auth.signOut();
     } catch (_) {
-      if (mounted) setState(() => error = 'Unable to sign out. Please retry.');
+      if (mounted) {
+        setState(() => signingOut = false);
+        showClinicToast(context, 'Unable to sign out. Please retry.');
+      }
     }
   }
 
@@ -39,9 +49,30 @@ class _AccountHomeState extends State<AccountHome> {
   Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
     future: profile,
     builder: (context, snapshot) {
+      if (signingOut) return const ClinicTransition('Logging you out…');
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const ClinicTransition('Logging you in…');
+      }
       final user = snapshot.data;
       if (user != null && user['role'] == null) {
-        return RoleSetup(onComplete: () => setState(load));
+        return RoleSetup(onSignOut: signOut, onComplete: () => setState(load));
+      }
+      if (user?['role'] == 'mentee') {
+        return MenteeHome(
+          name: [user!['first_name'], user['last_name']]
+              .whereType<String>()
+              .map((name) => name.trim())
+              .where((name) => name.isNotEmpty)
+              .join(' '),
+          newRequest: (context) => Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RequestTopicPage(AppointmentRepository(db)),
+            ),
+          ),
+          watchFeed: AppointmentRepository(db).watchFeed,
+          onSignOut: signOut,
+        );
       }
       return Scaffold(
         appBar: AppBar(
@@ -83,7 +114,6 @@ class _AccountHomeState extends State<AccountHome> {
                     const Text(
                       'Your account is connected. Appointment screens are the next development step.',
                     ),
-                    if (error != null) Text(error!),
                   ],
                 ),
         ),

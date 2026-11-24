@@ -3,6 +3,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:theregistry/auth_screen.dart';
 
 void main() {
+  testWidgets(
+    'both auth panels fit a portrait phone with the keyboard closed',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 740);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.tap(find.text('Swipe up or tap to sign in'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      for (final isRegistration in [false, true]) {
+        if (isRegistration) {
+          await tester.tap(find.text('Sign up'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+        final scroll = tester.state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(SingleChildScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        expect(scroll.position.maxScrollExtent, 0);
+        expect(find.text('Continue with Google').hitTestable(), findsOneWidget);
+      }
+    },
+  );
   testWidgets('tap the landing area and pull the form down to close it', (
     tester,
   ) async {
@@ -65,9 +94,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.ensureVisible(find.byType(FilledButton));
     await tester.pump();
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.text('Log In'));
     await tester.pump();
-    expect(find.text('Enter your email'), findsOneWidget);
+    expect(
+      tester
+          .state<FormFieldState<String>>(find.byType(TextFormField).first)
+          .errorText,
+      'Enter your email',
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -76,8 +110,8 @@ void main() {
     await tester.tap(find.text('Swipe up or tap to sign in'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
-    await tester.ensureVisible(find.textContaining('Register here'));
-    await tester.tap(find.textContaining('Register here'));
+    await tester.ensureVisible(find.text('Sign up'));
+    await tester.tap(find.text('Sign up'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Confirm password'), findsOneWidget);

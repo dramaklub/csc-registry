@@ -1,19 +1,18 @@
+import 'widgets/clinic_feedback.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'clinic_client.dart';
 import 'pages/auth/auth_screen.dart';
 import 'pages/account_home.dart';
 import 'pages/auth/reset_password_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: 'https://dpbfgyhsshoosaolniqb.supabase.co',
-    anonKey: 'sb_publishable_9B1wMNICNOEHVQ98FUtDEQ_ZbT7bm39',
-  );
+  await Supabase.initialize(url: clinicUrl, anonKey: clinicPublishableKey);
   runApp(const ClinicApp());
 }
 
@@ -82,13 +81,7 @@ class _AuthGateState extends State<_AuthGate> {
       onError: (Object error) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Could not verify your session. For password recovery, request a fresh link and open it on this phone.',
-              ),
-            ),
-          );
+          showClinicToast(context, 'Could not verify your session. For password recovery, request a fresh link and open it on this phone.');
         });
         WidgetsBinding.instance.ensureVisualUpdate();
       },
@@ -112,8 +105,7 @@ class _AuthGateState extends State<_AuthGate> {
           await auth.updateUser(UserAttributes(password: password));
         },
         onSaved: () {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Password updated.')));
+          showClinicToast(context, 'Password updated.');
           setState(() => recoveringUser = null);
         },
       );
